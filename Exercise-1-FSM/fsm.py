@@ -4,7 +4,6 @@ import click
 
 class FSM:
     def __init__(self, spec_file):
-        # Load the FSM specification from the JSON file with exception handling
         try:
             with open(spec_file, 'r') as f:
                 spec = json.load(f)
@@ -13,7 +12,6 @@ class FSM:
         except json.JSONDecodeError:
             raise ValueError(f"Error: The file '{spec_file}' is not a valid JSON file or is malformed.")
 
-        # Validate the required keys in the JSON
         required_keys = ["states", "alphabet", "transitions", "initialState", "acceptStates"]
         for key in required_keys:
             if key not in spec:
@@ -30,33 +28,40 @@ class FSM:
         """Perform a transition based on the input symbol."""
         for transition in self.transitions:
             if transition["from"] == self.current_state and transition["input"] == input_symbol:
-                click.echo(f"Transitioning from {self.current_state} to {transition['to']} on input '{input_symbol}'")
+                click.secho(f"{self.current_state:>10} --{transition['input']}--> {transition['to']}", bold=True)
                 self.current_state = transition["to"]
                 return
-        click.echo(f"No valid transition from state '{self.current_state}' on input '{input_symbol}'")
+        click.secho(f"No valid transition from state '{self.current_state}' on input '{input_symbol}'",
+                    fg="red", bold=True)
 
     def run(self, inputs):
         """Process a sequence of inputs through the FSM."""
-        click.echo(f"Initial state: {self.current_state}")
+        click.secho(f"Initial state: {self.current_state}", bold=True)
         for input_symbol in inputs:
             if input_symbol not in self.alphabet:
-                click.echo(f"Invalid input '{input_symbol}' not in alphabet {self.alphabet}")
+                click.secho(f"Invalid input '{input_symbol}' not in alphabet {self.alphabet}",
+                           fg="red", bold=True)
                 return
             self.transition(input_symbol)
 
-        click.echo(f"Final state: {self.current_state}")
+        self.print_acceptance()
+
+    def print_acceptance(self):
+        """Print whether the FSM ends in an accept state."""
+        click.secho(f"Final state: {self.current_state}", bold=True)
         if self.current_state in self.accept_states:
-            click.echo(f"The FSM has reached an accept state: {self.current_state}")
+            click.secho(f"The FSM has reached an accept state: {self.accept_states}.", fg="green", bold=True)
         else:
-            click.echo(f"The FSM did not reach an accept state.")
+            click.secho(f"The FSM did not reach an accept state: {self.accept_states}.", fg="red", bold=True)
 
     def print_model(self):
         """Print the FSM model details."""
-        click.echo("FSM Model Loaded:")
-        click.echo(f"  States: {self.states}")
-        click.echo(f"  Alphabet: {self.alphabet}")
-        click.echo(f"  Initial State: {self.initial_state}")
-        click.echo(f"  Accept States: {self.accept_states}")
-        click.echo("  Transitions:")
+        click.secho("FSM Model Loaded:", bold=True, fg="blue")
+        click.secho(f"  States: {self.states}", bold=True)
+        click.secho(f"  Alphabet: {self.alphabet}", bold=True)
+        click.secho(f"  Initial State: {self.initial_state}", bold=True)
+        click.secho(f"  Accept States: {self.accept_states}", bold=True)
+        click.secho("  Transitions:", bold=True)
         for transition in self.transitions:
-            click.echo(f"    {transition['from']} --{transition['input']}--> {transition['to']}")
+            click.secho(f"{transition['from']:>10} --{transition['input']}--> {transition['to']}", bold=True)
+
