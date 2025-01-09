@@ -1,0 +1,43 @@
+{
+    "states": [
+        "patrol", "investigate", "attack", "retreat", "reboot",
+        "idle", "call backup", "search area", "monitor"
+    ],
+    "alphabet": [
+        "player detected",
+        "player suspicious",
+        "player hostile",
+        "player not hostile",
+        "player out of sight",
+        "low health",
+        "system damaged",
+        "player defeated",
+        "system repaired",
+        "backup arrived",
+        "lost player",
+        "player attacking others"
+    ],
+    "initialState": "patrol",
+    "acceptStates": ["patrol", "idle"],
+    "transitions": [
+        { "from": "patrol", "to": "investigate", "input": "player suspicious" },
+        { "from": "patrol", "to": "attack", "input": "player hostile" },
+        { "from": "patrol", "to": "call backup", "input": "player attacking others" },
+        { "from": "investigate", "to": "search area", "input": "lost player" },
+        { "from": "investigate", "to": "attack", "input": "player hostile" },
+        { "from": "investigate", "to": "monitor", "input": "player not hostile" },
+        { "from": "search area", "to": "patrol", "input": "player out of sight" },
+        { "from": "search area", "to": "attack", "input": "player detected" },
+        { "from": "monitor", "to": "patrol", "input": "player out of sight" },
+        { "from": "monitor", "to": "investigate", "input": "player suspicious" },
+        { "from": "attack", "to": "retreat", "input": "low health" },
+        { "from": "attack", "to": "call backup", "input": "player attacking others" },
+        { "from": "attack", "to": "investigate", "input": "player out of sight" },
+        { "from": "call backup", "to": "attack", "input": "backup arrived" },
+        { "from": "retreat", "to": "reboot", "input": "system damaged" },
+        { "from": "retreat", "to": "idle", "input": "player out of sight" },
+        { "from": "reboot", "to": "patrol", "input": "system repaired" },
+        { "from": "reboot", "to": "idle", "input": "system damaged" },
+        { "from": "idle", "to": "patrol", "input": "system repaired" }
+    ]
+}
