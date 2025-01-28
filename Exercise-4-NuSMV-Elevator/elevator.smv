@@ -1,0 +1,108 @@
+---------------------------------------------------------------------------
+-- AN ELEVATOR CONTROLLER                                                --
+---------------------------------------------------------------------------
+--Formalize the behaviour of an elevator system for a 4-floors building.
+
+MODULE main
+
+-- Declare system states
+VAR
+	door: {open, closed};             -- Status of the elevator door
+	direction: {up, down, standing};  -- Direction of movement: Zup, down, or idle
+	floor: 0..4;                      -- Current floor of the elevator (0 to 4)
+	button: 0..4;                     -- Requested floor by pressing the button (0 to 4)
+
+-- Initialize system variables
+ASSIGN
+	init(door) := closed;             -- Doors are initially closed
+	init(direction) := standing;      -- The elevator initially is standing
+	init(floor) := 0;                 -- Elevator is at the floor 0
+	init(button) := 3;                -- Requested the 3rd floor initially
+
+    -- Define transitions for the current floor
+    next(floor) :=
+		case
+			door = closed & direction = up & floor < 4 : floor + 1;		-- Move up if it is possible
+			door = closed & direction = down & floor > 0 : floor - 1;	-- Move down if it is possible
+			TRUE : floor;												-- Stay at the current floor
+		esac;
+	
+	-- Define the elevator movement based on the requested floor
+	next(direction) :=
+		case
+			direction = up & floor = (button - 1) : standing; 			-- Preventive stop
+			direction = down & floor = (button + 1) : standing;
+			door = closed & button > floor : up; 						-- Move up if the request floor is higher
+			door = closed & button < floor : down;						-- Move Down if the request floor is lower
+			TRUE : direction;											-- Keep current state
+		esac;
+		
+	-- Define the door behavior (open / closed)
+	next(door) :=
+		case
+			direction = up & floor = (button - 1) : open;
+			direction = down & floor = (button + 1) : open;
+			TRUE : closed;											-- Otherwise, keep the doors closed
+		esac;
+		
+	-- Define the button behavior
+	next(button) :=
+		case
+			floor = 0 & button = 1 : 1;
+            floor = 0 & button = 2 : 2;
+            floor = 0 & button = 3 : 3;
+            floor = 0 & button = 4 : 4;
+            floor = 1 & button = 0 : 0;
+            floor = 1 & button = 2 : 2;
+            floor = 1 & button = 3 : 3;
+            floor = 1 & button = 4 : 4;
+            floor = 2 & button = 0 : 0;
+            floor = 2 & button = 1 : 1;
+            floor = 2 & button = 3 : 3;
+            floor = 2 & button = 4 : 4;
+            floor = 3 & button = 0 : 0;
+            floor = 3 & button = 1 : 1;
+            floor = 3 & button = 2 : 2;
+            floor = 3 & button = 4 : 4;
+            floor = 4 & button = 0 : 0;
+            floor = 4 & button = 1 : 1;
+            floor = 4 & button = 2 : 2;
+            floor = 4 & button = 3 : 3;
+            TRUE : button;
+		esac;
+			
+FAIRNESS button = 0;
+FAIRNESS button = 1;
+FAIRNESS button = 2;
+FAIRNESS button = 3;
+FAIRNESS button = 4;
+
+-- LTL Specifications --
+-- 1. The elevetor should not move if the door is open.
+LTLSPEC G(door=open -> direction=standing);
+
+-- 2. Whenever the door is open, it will eventually be closed.
+LTLSPEC G(door=open -> F (door=closed));
+
+-- 3. Whenever the door is closed, it will eventually be open.
+LTLSPEC G(door=closed -> F (door=open)); 
+
+-- 4. The elevator can move upward only if the floor is not the highest.
+LTLSPEC G(direction = up -> floor != 4);
+
+-- 5. The elevator can move downward only if the floor is not the lowest.
+LTLSPEC G(direction = down -> floor != 0);
+
+-- 6. The elevator can visit any floor infinitely often.
+LTLSPEC G(F(floor = 4));
+
+-- 7. When a floor is requested, the elevator will eventually stop at the floor.
+LTLSPEC G(button=3 -> F (floor = 3));
+
+-- 8. When the elevator is traveling upward, it does not change its direction
+--    when there are passengers waiting to go to a higher floor.
+LTLSPEC G((floor = 1 | floor = 2 | floor = 3) & direction = up & button = 4 -> direction = up U floor = 4);
+
+-- 9. When the elevator is traveling downward, it does not change its direction
+--    when there are passengers waiting to go to a lower floor.
+LTLSPEC G((floor = 2 | floor = 3 | floor = 4) & direction = down & button = 1 -> direction = down U floor = 1);
