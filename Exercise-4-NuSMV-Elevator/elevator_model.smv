@@ -1,0 +1,145 @@
+---------------------------------------------------------------------------
+-- AN ELEVATOR CONTROLLER                                                --
+---------------------------------------------------------------------------
+--Formalize the behavior of an elevator system for a 4-floors building.
+
+
+MODULE main
+
+-- Declare the system state variables
+VAR
+    floor : 0..4;                         -- Current floor of the elevator (0 to 4)
+    button : array 0..4 of boolean;       -- Requested floor for the elevator
+    button_pressed : -1..4;               -- Button pressed for the requested floor (-1 indicates no button pressed)
+    door_closed : boolean;                -- Status of the door: True if the door is closed, False if open
+    direction : {up, down, standing};     -- Elevator direction: up, down, or standing if stationary
+
+-- Initialize system variables
+ASSIGN
+    init(floor) := 0;                     -- Elevator starts at the floor 0
+    init(button[0]) := FALSE;             -- No floor is initially requested
+    init(button[1]) := FALSE;
+    init(button[2]) := FALSE;
+    init(button[3]) := FALSE;
+    init(button[4]) := FALSE;
+    init(button_pressed) := -1;           -- No button is pressed initially
+    init(door_closed) := TRUE;            -- Doors are initially closed
+    init(direction) := standing;          -- Elevator initially is in the standing state
+
+
+    -- Define transitions among the states
+    -- Elevator floor position
+    next(floor) :=
+        case
+            direction = up & floor < 4 : floor + 1;          -- Move up if elevator does not reach the highest floor
+            direction = down & floor > 0 : floor - 1;        -- Move down if elevator does not reach the lowest floor
+            TRUE : floor;                                    -- Stay on the current floor
+        esac;
+
+    -- Elevator movement direction
+    next(direction) :=
+        case
+			-- Move up if there's a request above the current floor and the door is closed
+            direction = standing & door_closed & (button[1] | button[2] | button[3] | button[4]) & (floor < 4) : up;
+
+            -- Move down if there's a request below the current floor and the door is closed
+            direction = standing & door_closed & (button[0] | button[1] | button[2] | button[3]) & (floor > 0) : down;
+			
+			-- Stop if the elevator reaches a requested floor
+            button[floor] = TRUE : standing;	
+
+			-- Maintain the current state if no requests are at the current floor
+            TRUE : direction;					
+        esac;
+
+    -- Define the door behavior (open / closed)
+    next(door_closed) :=
+    case
+		-- Open door if a request exists at the floor
+        direction = standing & button[floor] = TRUE : FALSE;  	
+		
+		-- Close door after request is served
+        direction = standing & door_closed = FALSE & button[floor] = FALSE : TRUE;  
+		
+		-- Keep the door closed while moving
+        direction != standing : TRUE;
+        TRUE : door_closed;
+    esac;
+
+    -- Define the button behavior
+    next(button[0]) :=
+        case
+            floor = 0 & button[0] & direction = standing : FALSE; 	 -- Clear request for floor 0 if served
+            button_pressed = 0 : TRUE;                        		 -- Set request if button 0 is pressed
+            TRUE : button[0];                                		 -- Maintain current state
+        esac;
+
+    next(button[1]) :=
+        case
+            floor = 1 & button[1] & direction = standing : FALSE; 	
+            button_pressed = 1 : TRUE;                       		
+            TRUE : button[1];                                 		
+        esac;
+
+    next(button[2]) :=
+        case
+            floor = 2 & button[2] & direction = standing : FALSE; 	
+            button_pressed = 2 : TRUE;                        		
+            TRUE : button[2];                                 		
+        esac;
+
+    next(button[3]) :=
+        case
+            floor = 3 & button[3] & direction = standing : FALSE; 	
+            button_pressed = 3 : TRUE;                        		
+            TRUE : button[3];                                 		
+        esac;
+
+    next(button[4]) :=
+        case
+            floor = 4 & button[4] & direction = standing : FALSE; 	
+            button_pressed = 4 : TRUE;                        		
+            TRUE : button[4];                                 		
+        esac;
+
+    -- Reset button_pressed to -1 after processing
+    next(button_pressed) :=
+        case
+            button_pressed != -1 : -1;                       		-- Reset button_pressed after a press
+            TRUE : button_pressed;                           		-- Maintain current state
+        esac;
+
+-- Fairness constraints to ensure floors are requested
+FAIRNESS
+    button_pressed in {0, 1, 2, 3, 4};
+
+
+-- LTL properties
+-- 1. The elevetor should not move if the door is open.
+LTLSPEC G(!door_closed -> !(direction = up | direction = down));
+
+-- 2. Whenever the door is open, it will eventually be closed.
+LTLSPEC G(!door_closed -> F door_closed);
+
+-- 3. Whenever the door is closed, it will eventually be open.
+LTLSPEC G(door_closed -> F !door_closed);
+
+-- 4. The elevator can move upward only if the floor is not the highest.
+LTLSPEC G(direction = up -> floor < 4);
+
+-- 5. The elevator can move downward only if the floor is not the lowest.
+LTLSPEC G(direction = down -> floor > 0);
+
+-- 6. The elevator can visit any floor infinitely often.
+LTLSPEC G(F(floor = 4));
+
+-- 7. When a floor is requested, the elevator will eventually stop at the floor.
+LTLSPEC G(button[3] -> F (floor = 3 & direction = standing));
+
+-- 8. When the elevator is traveling upward, it does not change its direction
+--    when there are passengers waiting to go to a higher floor.
+LTLSPEC G((floor = 1 | floor = 2 | floor = 3) & direction = up & button[4] -> direction = up U floor = 4);
+
+-- 9. When the elevator is traveling downward, it does not change its direction
+--    when there are passengers waiting to go to a lower floor.
+LTLSPEC G((floor = 4 | floor = 3 | floor = 2) & direction = down & button[1] -> direction = down U floor = 1);

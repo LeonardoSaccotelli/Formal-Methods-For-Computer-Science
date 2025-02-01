@@ -1,18 +1,18 @@
-read_model -i D:\2_UNIVERSITA\2_MAGISTRALE\1_ANNO\3_FORMAL_METHODS_IN_CS\Project-Exam\Exercise-4-NuSMV-Elevator\elevator.smv
+read_model -i D:\2_UNIVERSITA\2_MAGISTRALE\1_ANNO\3_FORMAL_METHODS_IN_CS\Project-Exam\Exercise-4-NuSMV-Elevator\elevator_model.smv
 flatten_hierarchy
 encode_variables
 build_model
 
 
-check_ltlspec -p "G(door=open -> direction=standing)"
-check_ltlspec -p "G(door=open -> F (door=closed))" 
-check_ltlspec -p "G(door=closed -> F (door=open))" 
-check_ltlspec -p "G(direction = up -> floor != 4)"
-check_ltlspec -p "G(direction = down -> floor != 0)"
+check_ltlspec -p "G(!door_closed -> !(direction = up | direction = down))"
+check_ltlspec -p "G(!door_closed -> F door_closed)" 
+check_ltlspec -p "G(door_closed -> F !door_closed)" 
+check_ltlspec -p "G(direction = up -> floor < 4)"
+check_ltlspec -p "G(direction = down -> floor > 0)"
 check_ltlspec -p "G(F(floor = 4))"
-check_ltlspec -p " G(button=3 -> F (floor = 3 & direction = standing))"
-check_ltlspec -p "G((floor = 1 | floor = 2 | floor = 3) & direction = up & button = 4 -> direction = up U floor = 4)"
-check_ltlspec -p "G((floor = 2 | floor = 3 | floor = 4) & direction = down & button = 1 -> direction = down U floor = 1)"
+check_ltlspec -p "G(button[3] -> F (floor = 3 & direction = standing))"
+check_ltlspec -p "G((floor = 1 | floor = 2 | floor = 3) & direction = up & button[4] -> direction = up U floor = 4)"
+check_ltlspec -p "G((floor = 4 | floor = 3 | floor = 2) & direction = down & button[1] -> direction = down U floor = 1)"
 
 go
 pick_state -i
