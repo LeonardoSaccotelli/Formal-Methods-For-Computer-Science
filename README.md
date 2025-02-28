@@ -48,4 +48,4 @@ This project delves into **finite state machines, formal methods, Petri nets, mo
 
 ### License
 
-This project is released under the **MIT License**. See the LICENSE file for details.
+This project is released under the [LICENSE](LICENSE). See the LICENSE file for details.
